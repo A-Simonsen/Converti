@@ -1,0 +1,25 @@
+{
+  "name": "converti",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/A-Simonsen/Converti.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/A-Simonsen/Converti/issues"
+  },
+  "homepage": "https://github.com/A-Simonsen/Converti#readme",
+  "devDependencies": {
+    "electron": "^40.3.0"
+  }
+}
