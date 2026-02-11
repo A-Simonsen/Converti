@@ -32,24 +32,45 @@ not a code generator.
 
 ## Current State
 
-The project has a basic Electron app running:
-- `main.js` creates a BrowserWindow and loads `index.html`
-- `index.html` has a simple landing page with a title and button
-- No preload script yet
-- No IPC yet
-- No file conversion logic yet
+**✅ Phases Completed:**
+
+- **Phase 0:** Environment & Foundations (npm, package.json, Node.js basics)
+- **Phase 1:** Hello Electron (window creation, basic app running)
+- **Phase 2:** IPC & Preload (secure communication working!)
+
+**What's Working:**
+
+- Electron app launches with a 600x600 window
+- `main.js` creates BrowserWindow with preload script configured
+- `preload.js` uses contextBridge to expose secure API to renderer
+- `index.html` has a button that triggers file picker
+- `renderer.js` handles button clicks and calls IPC methods
+- IPC communication flows: renderer → preload → main → dialog → back
+- File picker opens, filters for images, returns selected file path to console
+
+**Not Yet Implemented:**
+
+- No actual file conversion logic yet
+- No image processing library (sharp/jimp) installed yet
 - No plugin system yet
+- UI needs improvement (basic styling only)
+
+**Next Step:** Phase 3 — Image Conversion (Hardcoded)
+Install `sharp`, convert selected image to different format, save output.
 
 ## Project Structure (current)
 
 ```
 Converti/
 ├── .claude/skills/node-mentor-skill/   # Mentoring skill (read this!)
-├── main.js                             # Electron main process
-├── index.html                          # Basic landing page
+├── main.js                             # Electron main process with IPC handlers
+├── preload.js                          # Secure contextBridge API
+├── renderer.js                         # UI event handlers, calls window.api
+├── index.html                          # Landing page with file picker button
 ├── style.css                           # (referenced but not yet created)
-├── package.json
-└── package-lock.json
+├── package.json                        # Configured with "start" script
+├── package-lock.json
+└── node_modules/                       # Electron installed
 ```
 
 ## Conventions to Follow
@@ -62,12 +83,12 @@ Converti/
 
 ## Things to Watch For
 
-- `package.json` has `"main": "index.js"` but the actual entry is `main.js` —
-  this will need fixing (let the student discover it or address when relevant)
+- ✅ `package.json` `"main"` entry was fixed to `"main.js"` (student debugged this!)
+- `style.css` is referenced in `index.html` but doesn't exist yet (cosmetic issue, not blocking)
 - No `.gitignore` entry for `.claude/` — student may want to decide if the
   skill should be committed
-- `style.css` is referenced in `index.html` as `style.css` but doesn't exist
-  in the repo yet
+- Student understands const/let, arrow functions, Promises, async/await basics
+- Student successfully debugged their first "require is not defined" error
 
 ## How to Respond
 
