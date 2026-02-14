@@ -16,7 +16,7 @@ function main() {
 
   ipcMain.handle("pickFile", async (event, selectedExtension) => {
     const result = await dialog.showOpenDialog({
-      properties: ["openFile"],
+      properties: ["multiSelections", "openFile"],
       filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "gif"] }],
     });
 
@@ -24,16 +24,21 @@ function main() {
     console.log("Type of result:", typeof result);
 
     if (!result.canceled && result.filePaths.length > 0) {
-      const inputPath = result.filePaths[0];
-      console.log("Selected file:", inputPath);
+      for (const filePath of result.filePaths) {
+        const inputPath = filePath;
 
-      // Build output path
-      const oldExt = path.extname(inputPath);
-      const outputPath = inputPath.replace(oldExt, selectedExtension);
+        console.log("Selected file:", inputPath);
 
-      console.log("Output file:", outputPath);
+        // Build output path
+        const oldExt = path.extname(inputPath);
+        const outputPath = inputPath.replace(oldExt, selectedExtension);
 
-      sharp(inputPath).toFormat(selectedExtension).toFile(outputPath);
+        console.log("Output file:", outputPath);
+
+        const extWithoutDot = selectedExtension.substring(1);
+
+        sharp(inputPath).toFormat(extWithoutDot).toFile(outputPath);
+      }
     }
   });
 }
