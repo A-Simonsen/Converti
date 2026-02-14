@@ -37,40 +37,55 @@ not a code generator.
 - **Phase 0:** Environment & Foundations (npm, package.json, Node.js basics)
 - **Phase 1:** Hello Electron (window creation, basic app running)
 - **Phase 2:** IPC & Preload (secure communication working!)
+- **Phase 3:** Image Conversion (Hardcoded) — sharp library working, converts images!
+- **Phase 4:** UI for Format Selection — User can choose output format via dropdown!
 
 **What's Working:**
 
 - Electron app launches with a 600x600 window
 - `main.js` creates BrowserWindow with preload script configured
 - `preload.js` uses contextBridge to expose secure API to renderer
-- `index.html` has a button that triggers file picker
-- `renderer.js` handles button clicks and calls IPC methods
-- IPC communication flows: renderer → preload → main → dialog → back
-- File picker opens, filters for images, returns selected file path to console
+- `index.html` has format dropdown (`<select>`) and convert button
+- `renderer.js` reads dropdown value and passes it through IPC
+- IPC communication flows: renderer → preload (with format param) → main → dialog
+- File picker opens, filters for images, returns selected file path
+- **sharp library installed and working** — converts images to user-selected format!
+- Format dropdown includes: `.jpg`, `.png`, `.gif` (with dots in HTML values)
+- Conversion respects user's format choice dynamically
+- Student debugged "dot vs no-dot" issue independently (excellent debugging!)
+
+**Technical Decisions Made:**
+
+- Dropdown `<option>` values include dots (`.jpg`, `.png`) for cleaner main.js logic
+- `path.extname()` returns extension WITH dot — student discovered this through debugging
+- IPC handler receives format as second parameter: `async (event, selectedExtension)`
+- sharp conversion uses: `sharp(inputPath).toFormat(selectedExtension).toFile(outputPath)`
 
 **Not Yet Implemented:**
 
-- No actual file conversion logic yet
-- No image processing library (sharp/jimp) installed yet
-- No plugin system yet
-- UI needs improvement (basic styling only)
+- No multiple file selection yet (Phase 5)
+- No batch processing yet (Phase 5)
+- No output directory selection yet (Phase 6)
+- No progress feedback/UI updates yet (Phase 6)
+- No plugin system yet (Phase 7+)
+- UI is functional but minimal styling
 
-**Next Step:** Phase 3 — Image Conversion (Hardcoded)
-Install `sharp`, convert selected image to different format, save output.
+**Next Step:** Phase 5 — Multiple File Selection & Batch Processing
+Add ability to select multiple images and convert them all at once.
 
 ## Project Structure (current)
 
 ```
 Converti/
 ├── .claude/skills/node-mentor-skill/   # Mentoring skill (read this!)
-├── main.js                             # Electron main process with IPC handlers
-├── preload.js                          # Secure contextBridge API
-├── renderer.js                         # UI event handlers, calls window.api
-├── index.html                          # Landing page with file picker button
-├── style.css                           # (referenced but not yet created)
-├── package.json                        # Configured with "start" script
+├── main.js                             # Electron main process with IPC handlers & sharp
+├── preload.js                          # Secure contextBridge API (passes format param)
+├── renderer.js                         # UI event handlers, reads dropdown, calls API
+├── index.html                          # Format dropdown + convert button
+├── style.css                           # Basic styling (exists but minimal)
+├── package.json                        # npm start script, sharp dependency
 ├── package-lock.json
-└── node_modules/                       # Electron installed
+└── node_modules/                       # Electron + sharp installed
 ```
 
 ## Conventions to Follow
@@ -83,12 +98,38 @@ Converti/
 
 ## Things to Watch For
 
-- ✅ `package.json` `"main"` entry was fixed to `"main.js"` (student debugged this!)
-- `style.css` is referenced in `index.html` but doesn't exist yet (cosmetic issue, not blocking)
-- No `.gitignore` entry for `.claude/` — student may want to decide if the
-  skill should be committed
-- Student understands const/let, arrow functions, Promises, async/await basics
-- Student successfully debugged their first "require is not defined" error
+- ✅ `package.json` `"main"` entry is correctly set to `"main.js"`
+- ✅ Student understands async/await and Promise handling
+- ✅ Student successfully debugged path.extname() behavior independently
+- ✅ Student understands IPC parameter passing through the chain
+- File extension handling: dropdown values include dots, main.js uses them directly
+- No output file collision detection yet (converting file.png → file.png would overwrite)
+- Student has not yet committed Phase 4 work to git (good checkpoint opportunity!)
+
+## Student's Learning Journey & Wins
+
+**Phase 0-2 Wins:**
+
+- Debugged "require is not defined" error independently
+- Fixed `package.json` "main" entry through problem-solving
+- Understood async vs sync dialog APIs
+- Successfully traced IPC communication chain
+
+**Phase 3-4 Wins:**
+
+- Installed and used npm package (sharp) successfully
+- Learned file path manipulation with Node's `path` module
+- Debugged async dialog API return structure (discovered `result.filePaths` array)
+- Built UI → backend data flow for first time (dropdown → main process)
+- **Debugged path.extname() dot behavior independently** — explained problem clearly!
+- Fixed HTML dropdown values to include dots for cleaner code
+
+**Teaching Moments That Worked:**
+
+- Reading error messages and console.log output to understand data structures
+- Connecting Node.js concepts to C# equivalents (Path.GetExtension, etc.)
+- Encouraging experimentation and debugging over direct answers
+- Celebrating small wins and progress
 
 ## How to Respond
 
@@ -97,3 +138,14 @@ Converti/
 3. Ask what they're working on before assuming
 4. One concept at a time
 5. Celebrate progress
+6. When student returns from break, offer to commit Phase 4 before starting Phase 5
+
+## When Student Returns
+
+**Suggested Next Actions:**
+
+1. Offer to help commit Phase 4 progress to git (good checkpoint!)
+2. Review Phase 5 goals: multiple file selection & batch processing
+3. Discuss approach: how would multiple files change the current flow?
+4. Guide through modifying dialog to allow `multiSelections` property
+5. Teach iteration/looping for batch conversion

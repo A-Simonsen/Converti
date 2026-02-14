@@ -14,7 +14,7 @@ function main() {
     window.loadFile("index.html");
   });
 
-  ipcMain.handle("pickFile", async () => {
+  ipcMain.handle("pickFile", async (event, selectedExtension) => {
     const result = await dialog.showOpenDialog({
       properties: ["openFile"],
       filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "gif"] }],
@@ -29,11 +29,11 @@ function main() {
 
       // Build output path
       const oldExt = path.extname(inputPath);
-      const outputPath = inputPath.replace(oldExt, ".jpg");
+      const outputPath = inputPath.replace(oldExt, selectedExtension);
 
       console.log("Output file:", outputPath);
 
-      sharp(inputPath).toFormat("jpg").toFile(outputPath);
+      sharp(inputPath).toFormat(selectedExtension).toFile(outputPath);
     }
   });
 }
