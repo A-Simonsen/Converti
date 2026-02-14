@@ -12,4 +12,10 @@ contextBridge.exposeInMainWorld("api", {
   pickFile(selectedExtension, outputFolder) {
     return ipcRenderer.invoke("pickFile", selectedExtension, outputFolder);
   },
+
+  onConversionProgress(callback) {
+    ipcRenderer.on("conversionProgress", (event, progress) => {
+      callback(progress);
+    });
+  },
 });

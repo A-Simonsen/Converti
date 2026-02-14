@@ -1,6 +1,21 @@
 // Store the selected output folder (null if not chosen)
 let selectedOutputFolder = null;
 
+// Get reference to progress text element
+const progressText = document.getElementById("progress-text");
+
+// Listen for conversion progress updates from main process
+window.api.onConversionProgress((progress) => {
+  progressText.textContent = `${progress}% complete`;
+
+  // Clear the message after completion
+  if (progress === 100) {
+    setTimeout(() => {
+      progressText.textContent = "";
+    }, 2000); // Clear after 2 seconds
+  }
+});
+
 // Handler for "Pick Output Location" button
 const pickOutputBtn = document.getElementById("pick-output-location-btn");
 pickOutputBtn.addEventListener("click", async () => {

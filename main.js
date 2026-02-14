@@ -2,16 +2,18 @@ const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const sharp = require("sharp");
 const path = require("path");
 
+let mainWindow; // Declare mainWindow
+
 function main() {
   app.whenReady().then(() => {
-    const window = new BrowserWindow({
+    mainWindow = new BrowserWindow({
       width: 600,
       height: 600,
       webPreferences: {
         preload: path.join(__dirname, "preload.js"),
       },
     });
-    window.loadFile("index.html");
+    mainWindow.loadFile("index.html");
   });
 
   // Handler for picking output location
@@ -45,8 +47,10 @@ function main() {
       console.log("Type of result:", typeof result);
 
       if (!result.canceled && result.filePaths.length > 0) {
-        for (const filePath of result.filePaths) {
-          const inputPath = filePath;
+        const totalFiles = result.filePaths.length; // Get total number of files for progress tracking
+
+        for (let i = 0; i < result.filePaths.length; i++) {
+          const inputPath = result.filePaths[i];
 
           console.log("Selected file:", inputPath);
 
@@ -69,6 +73,9 @@ function main() {
           const extWithoutDot = selectedExtension.substring(1);
 
           await sharp(inputPath).toFormat(extWithoutDot).toFile(outputPath);
+
+          const progress = Math.round(((i + 1) / totalFiles) * 100);
+          mainWindow.webContents.send("conversionProgress", progress); // Send progress update to renderer
         }
       }
     } catch (error) {
