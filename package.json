@@ -21,5 +21,8 @@
   "homepage": "https://github.com/A-Simonsen/Converti#readme",
   "devDependencies": {
     "electron": "^40.3.0"
+  },
+  "dependencies": {
+    "sharp": "^0.34.5"
   }
 }

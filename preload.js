@@ -6,6 +6,6 @@ contextBridge.exposeInMainWorld("api", {
   },
 
   pickFile() {
-    return ipcRenderer.invoke("pick-file");
+    return ipcRenderer.invoke("pickFile");
   },
 });
