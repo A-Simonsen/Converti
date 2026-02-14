@@ -14,7 +14,20 @@ function main() {
     window.loadFile("index.html");
   });
 
-  ipcMain.handle("pickFile", async (event, selectedExtension) => {
+  // Handler for picking output location
+  ipcMain.handle("pickOutputLocation", async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openDirectory"],
+      title: "Choose Output Folder",
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      return result.filePaths[0]; // Return the selected folder path
+    }
+    return null; // User canceled
+  });
+
+  ipcMain.handle("pickFile", async (event, selectedExtension, outputFolder) => {
     const result = await dialog.showOpenDialog({
       properties: ["multiSelections", "openFile"],
       filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "gif"] }],
@@ -31,7 +44,17 @@ function main() {
 
         // Build output path
         const oldExt = path.extname(inputPath);
-        const outputPath = inputPath.replace(oldExt, selectedExtension);
+        const fileName = path.basename(inputPath, oldExt); // Get filename without extension
+        const newFileName = fileName + selectedExtension; // Add new extension
+
+        let outputPath;
+        if (outputFolder) {
+          // Use custom output folder
+          outputPath = path.join(outputFolder, newFileName);
+        } else {
+          // Use same folder as input file
+          outputPath = inputPath.replace(oldExt, selectedExtension);
+        }
 
         console.log("Output file:", outputPath);
 

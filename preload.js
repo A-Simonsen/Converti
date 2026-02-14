@@ -5,7 +5,11 @@ contextBridge.exposeInMainWorld("api", {
     return "Hello from preload!";
   },
 
-  pickFile(selectedExtension) {
-    return ipcRenderer.invoke("pickFile", selectedExtension);
+  pickOutputLocation() {
+    return ipcRenderer.invoke("pickOutputLocation");
+  },
+
+  pickFile(selectedExtension, outputFolder) {
+    return ipcRenderer.invoke("pickFile", selectedExtension, outputFolder);
   },
 });
