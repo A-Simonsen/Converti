@@ -42,6 +42,10 @@ not a code generator.
 - **Phase 5:** Multiple File Selection & Batch Processing — Users can convert multiple images at once!
 - **Phase 6:** Output Directory & Progress Feedback — Custom save location + live progress updates!
 
+**🚧 Phase 7 — In Progress:**
+
+- **Plugin Architecture** — Designing and building a plugin system for extensibility
+
 **What's Working:**
 
 - Electron app launches with a 600x600 window
@@ -60,6 +64,14 @@ not a code generator.
 - **Error handling** — Try-catch blocks protect against file and conversion errors
 - Student debugged "dot vs no-dot" issue independently (excellent debugging!)
 
+**Phase 7 Progress (Plugin Architecture):**
+
+- **Plugin structure designed** — Folder-per-plugin approach for flexibility
+- **Metadata schema created** — `plugin.json` with id, name, version, description, category, author
+- **First plugin folder** — `plugins/image-converter/` with plugin.json created
+- Learning `module.exports` pattern for plugin contract
+- Understanding `fs.readdirSync()` for plugin discovery
+
 **Technical Decisions Made:**
 
 - Dropdown `<option>` values include dots (`.jpg`, `.png`) for cleaner main.js logic
@@ -75,16 +87,30 @@ not a code generator.
 - Sequential conversion with `await` — ensures proper error handling and progress tracking
 - Conditional output path logic checks if `outputFolder` exists before using it
 
+**Phase 7 Technical Decisions:**
+
+- **Folder-per-plugin structure** — Each plugin is a self-contained folder with multiple files
+- **Separate metadata file** — `plugin.json` (JSON) separate from `index.js` (code) for faster discovery
+- **Plugin metadata schema** — id, name, version, description, category, author fields
+- **Discovery approach** — Use `fs.readdirSync()` to scan plugins folder at startup
+- **Module loading** — Use `require()` to dynamically load plugin code
+
 **Not Yet Implemented:**
 
-- No plugin system yet (Phase 7+)
+- Plugin loader (discovery and loading logic)
+- Plugin execution contract (what functions plugins must export)
+- Dynamic UI based on loaded plugins
 - No settings/configuration persistence
 - No image preview before conversion
 - No drag-and-drop support
 - UI styling is functional but minimal
 
-**Next Step:** Phase 7+ — Plugin Architecture (Advanced)
-Design a plugin system for adding new file format converters dynamically.
+**Next Step:** Phase 7 (continued) — Complete plugin system design and implementation
+
+- Define plugin execution contract (`module.exports` structure)
+- Move conversion logic from main.js into plugin
+- Build plugin loader and registry
+- Wire plugins into existing UI
 
 ## Project Structure (current)
 
@@ -97,6 +123,9 @@ Converti/
 ├── index.html                          # Format dropdown + 2 buttons + progress text
 ├── css/
 │   └── style.css                       # Basic styling
+├── plugins/                            # Plugin system (Phase 7 in progress!)
+│   └── image-converter/
+│       └── plugin.json                 # Plugin metadata
 ├── package.json                        # npm start script, sharp dependency
 ├── package-lock.json
 └── node_modules/                       # Electron + sharp installed
@@ -155,6 +184,16 @@ Converti/
 - Structured code with separate event handlers per button
 - Used `await` properly in loops for sequential async operations
 
+**Phase 7 Wins:**
+
+- Understanding plugin architecture concepts (discovery, loading, execution)
+- Designed plugin metadata schema from scratch (id, name, version, category, author)
+- Chose folder-per-plugin structure for extensibility
+- Learned separation of concerns for metadata vs code (JSON vs JS)
+- Understanding `module.exports` pattern for creating reusable modules
+- Connected plugin concepts to C# interfaces and abstract classes
+- Learning `fs.readdirSync()` for directory operations
+
 **Teaching Moments That Worked:**
 
 - Reading error messages and console.log output to understand data structures
@@ -175,15 +214,18 @@ Converti/
 
 ## When Student Returns
 
-**Current Status:** Phase 6 Complete! 🎉
+**Current Status:** Phase 7 - Plugin Architecture (In Progress) 🔌
 
-**Suggested Next Actions:**
+**What's Done:**
 
-1. Celebrate the completion of Phases 0-6 (major milestone!)
-2. Commit Phase 6 progress to git if not already done
-3. Discuss options for next steps:
-   - **Option A:** Polish existing features (better styling, error messages, UX improvements)
-   - **Option B:** Phase 7 - Plugin Architecture (advanced topic, requires design thinking)
-   - **Option C:** Add features like drag-and-drop, image preview, or settings persistence
-   - **Option D:** Refactor/clean up code, add comments, prepare for portfolio showcase
-4. If continuing, ask student what interests them most — let them drive the direction
+- Plugin folder structure created (`plugins/image-converter/`)
+- Plugin metadata schema designed and implemented in `plugin.json`
+- Understanding of `module.exports` and `require()` for plugin loading
+- Learning `fs.readdirSync()` for plugin discovery
+
+**Next Steps:**
+
+1. Design the plugin execution contract (`module.exports` structure for `index.js`)
+2. Move conversion logic from main.js into the plugin
+3. Build plugin loader to discover and load plugins
+4. Test the plugin system works before building more plugins
