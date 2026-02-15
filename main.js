@@ -56,8 +56,8 @@ function main() {
 
           // Build output path
           const oldExt = path.extname(inputPath);
-          const fileName = path.basename(inputPath, oldExt); // Get filename without extension
-          const newFileName = fileName + selectedExtension; // Add new extension
+          const fileName = path.basename(inputPath, oldExt);
+          const newFileName = fileName + selectedExtension;
 
           let outputPath;
           if (outputFolder) {
