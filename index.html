@@ -7,59 +7,57 @@
     <link rel="stylesheet" href="./css/style.css" />
   </head>
   <body>
-    <div class="container">
-      <h1>Converti</h1>
+    <!-- Sidebar: Plugin tools -->
+    <nav id="tool-sidebar">
+      <div id="tool-list"></div>
+    </nav>
 
-      <!-- Format Selection -->
-      <div>
-        <label class="field-label" for="extension-selector"
-          >Output Format</label
-        >
-        <div class="select-wrapper">
-          <select id="extension-selector">
-            <option value=".jpg">JPG</option>
-            <option value=".png">PNG</option>
-            <option value=".gif">GIF</option>
-          </select>
-        </div>
+    <!-- Main content area -->
+    <main id="tool-content">
+      <!-- Empty state (no tool selected) -->
+      <div id="empty-state" class="empty-state">
+        <span class="empty-icon">🧰</span>
+        <p>Select a tool to get started</p>
       </div>
 
-      <!-- Output Location -->
-      <div>
-        <button id="pick-output-location-btn" class="btn btn-secondary">
-          📁 Pick Output Location
-        </button>
-        <div id="output-folder-info" class="output-folder-info">
-          <span class="output-folder-icon">📂</span>
-          <span id="output-folder-path" class="output-folder-path"></span>
-          <button
-            id="clear-output-btn"
-            class="btn-clear"
-            title="Clear selection"
-          >
-            ✕
+      <!-- Tool view (rendered dynamically) -->
+      <div id="tool-view" class="tool-view hidden">
+        <header class="tool-header">
+          <h1 id="tool-name"></h1>
+          <p id="tool-description" class="tool-description"></p>
+        </header>
+
+        <!-- Dynamic options rendered here -->
+        <div id="tool-options" class="tool-options"></div>
+
+        <!-- Output folder -->
+        <div class="output-section">
+          <button id="pick-output-btn" class="btn btn-ghost">
+            📁 Output folder
           </button>
+          <div id="output-folder-info" class="folder-info hidden">
+            <span id="output-folder-path" class="folder-path"></span>
+            <button id="clear-output-btn" class="btn-icon" title="Clear">
+              ✕
+            </button>
+          </div>
         </div>
-      </div>
 
-      <!-- Convert Button -->
-      <div>
-        <button id="pick-file-btn" class="btn btn-primary">
-          Start Converting
-        </button>
-      </div>
+        <!-- Action -->
+        <button id="convert-btn" class="btn btn-primary">Convert</button>
 
-      <!-- Progress Area -->
-      <div id="progress-area" class="progress-area">
-        <div class="progress-bar-track">
-          <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <!-- Progress -->
+        <div id="progress-area" class="progress-area hidden">
+          <div class="progress-track">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+          <span id="progress-text" class="progress-text"></span>
         </div>
-        <span id="progress-text" class="progress-text"></span>
-      </div>
 
-      <!-- Status Message (success/error) -->
-      <div id="status-message" class="status-message"></div>
-    </div>
+        <!-- Status -->
+        <div id="status-message" class="status-message hidden"></div>
+      </div>
+    </main>
 
     <script src="renderer.js"></script>
   </body>

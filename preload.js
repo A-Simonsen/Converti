@@ -9,8 +9,8 @@ contextBridge.exposeInMainWorld("api", {
     return ipcRenderer.invoke("pickOutputLocation");
   },
 
-  pickFile(selectedExtension, outputFolder) {
-    return ipcRenderer.invoke("pickFile", selectedExtension, outputFolder);
+  convert(pluginId, options, outputFolder) {
+    return ipcRenderer.invoke("convert", pluginId, options, outputFolder);
   },
 
   onConversionProgress(callback) {

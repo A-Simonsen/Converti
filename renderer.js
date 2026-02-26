@@ -1,124 +1,220 @@
 // State
+let plugins = [];
+let activePluginId = null;
 let selectedOutputFolder = null;
 
-// DOM elements
-const progressArea = document.getElementById("progress-area");
-const progressBarFill = document.getElementById("progress-bar-fill");
-const progressText = document.getElementById("progress-text");
-const statusMessage = document.getElementById("status-message");
+// DOM refs
+const toolList = document.getElementById("tool-list");
+const emptyState = document.getElementById("empty-state");
+const toolView = document.getElementById("tool-view");
+const toolName = document.getElementById("tool-name");
+const toolDescription = document.getElementById("tool-description");
+const toolOptions = document.getElementById("tool-options");
+const pickOutputBtn = document.getElementById("pick-output-btn");
 const outputFolderInfo = document.getElementById("output-folder-info");
 const outputFolderPath = document.getElementById("output-folder-path");
 const clearOutputBtn = document.getElementById("clear-output-btn");
-const pickOutputBtn = document.getElementById("pick-output-location-btn");
-const pickFileBtn = document.getElementById("pick-file-btn");
-const extensionSelector = document.getElementById("extension-selector");
+const convertBtn = document.getElementById("convert-btn");
+const progressArea = document.getElementById("progress-area");
+const progressFill = document.getElementById("progress-fill");
+const progressText = document.getElementById("progress-text");
+const statusMessage = document.getElementById("status-message");
 
-// --- Utility Functions ---
+// ===== Sidebar =====
 
-function showStatus(message, type) {
-  statusMessage.textContent = message;
-  statusMessage.className = `status-message visible ${type}`;
+function renderSidebar() {
+  toolList.innerHTML = "";
+
+  plugins.forEach((plugin) => {
+    const btn = document.createElement("button");
+    btn.className = "tool-icon-btn";
+    btn.title = plugin.name;
+    btn.textContent = plugin.icon || "🔧";
+    btn.dataset.pluginId = plugin.id;
+
+    btn.addEventListener("click", () => selectTool(plugin.id));
+    toolList.appendChild(btn);
+  });
 }
 
-function hideStatus() {
-  statusMessage.className = "status-message";
+function selectTool(pluginId) {
+  activePluginId = pluginId;
+  const plugin = plugins.find((p) => p.id === pluginId);
+  if (!plugin) return;
+
+  // Update sidebar active state
+  document.querySelectorAll(".tool-icon-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.pluginId === pluginId);
+  });
+
+  // Show tool view, hide empty state
+  emptyState.classList.add("hidden");
+  toolView.classList.remove("hidden");
+
+  // Populate header
+  toolName.textContent = plugin.name;
+  toolDescription.textContent = plugin.description;
+
+  // Render options
+  renderOptions(plugin.options || []);
+
+  // Reset status
+  hideStatus();
+  hideProgress();
 }
 
-function showProgress() {
-  progressArea.classList.add("visible");
-  progressBarFill.style.width = "0%";
-  progressText.textContent = "Starting...";
+// ===== Dynamic Options =====
+
+function renderOptions(options) {
+  toolOptions.innerHTML = "";
+
+  options.forEach((opt) => {
+    const group = document.createElement("div");
+    group.className = "option-group";
+
+    const label = document.createElement("label");
+    label.textContent = opt.label;
+    label.setAttribute("for", `opt-${opt.id}`);
+    group.appendChild(label);
+
+    if (opt.type === "select") {
+      const wrap = document.createElement("div");
+      wrap.className = "select-wrap";
+
+      const select = document.createElement("select");
+      select.id = `opt-${opt.id}`;
+      select.dataset.optionId = opt.id;
+
+      opt.choices.forEach((choice) => {
+        const option = document.createElement("option");
+        option.value = choice.value;
+        option.textContent = choice.label;
+        if (choice.value === opt.default) option.selected = true;
+        select.appendChild(option);
+      });
+
+      wrap.appendChild(select);
+      group.appendChild(wrap);
+    }
+
+    toolOptions.appendChild(group);
+  });
 }
 
-function hideProgress() {
-  progressArea.classList.remove("visible");
+function collectOptions() {
+  const options = {};
+  toolOptions.querySelectorAll("[data-option-id]").forEach((el) => {
+    options[el.dataset.optionId] = el.value;
+  });
+  return options;
 }
 
-function updateProgress(percent) {
-  progressBarFill.style.width = `${percent}%`;
-  progressText.textContent = `${percent}% complete`;
-}
-
-function updateOutputFolderDisplay() {
-  if (selectedOutputFolder) {
-    outputFolderPath.textContent = selectedOutputFolder;
-    outputFolderInfo.classList.add("visible");
-  } else {
-    outputFolderInfo.classList.remove("visible");
-    outputFolderPath.textContent = "";
-  }
-}
-
-// --- Progress & Error Listeners ---
-
-window.api.onConversionProgress((progress) => {
-  updateProgress(progress);
-});
-
-window.api.onConversionError((errorInfo) => {
-  console.error(`Conversion error for ${errorInfo.file}: ${errorInfo.error}`);
-});
-
-// --- Output Folder ---
+// ===== Output Folder =====
 
 pickOutputBtn.addEventListener("click", async () => {
   const folder = await window.api.pickOutputLocation();
   if (folder) {
     selectedOutputFolder = folder;
-    updateOutputFolderDisplay();
+    updateFolderDisplay();
   }
 });
 
 clearOutputBtn.addEventListener("click", () => {
   selectedOutputFolder = null;
-  updateOutputFolderDisplay();
+  updateFolderDisplay();
 });
 
-// --- Conversion ---
+function updateFolderDisplay() {
+  if (selectedOutputFolder) {
+    outputFolderPath.textContent = selectedOutputFolder;
+    outputFolderInfo.classList.remove("hidden");
+  } else {
+    outputFolderInfo.classList.add("hidden");
+  }
+}
 
-pickFileBtn.addEventListener("click", async () => {
+// ===== Progress =====
+
+window.api.onConversionProgress((progress) => {
+  progressFill.style.width = `${progress}%`;
+  progressText.textContent = `${progress}%`;
+});
+
+window.api.onConversionError((info) => {
+  console.error(`Error: ${info.file} — ${info.error}`);
+});
+
+function showProgress() {
+  progressArea.classList.remove("hidden");
+  progressFill.style.width = "0%";
+  progressText.textContent = "0%";
+}
+
+function hideProgress() {
+  progressArea.classList.add("hidden");
+}
+
+// ===== Status =====
+
+function showStatus(message, type) {
+  statusMessage.textContent = message;
+  statusMessage.className = `status-message ${type}`;
+}
+
+function hideStatus() {
+  statusMessage.className = "status-message hidden";
+}
+
+// ===== Convert =====
+
+convertBtn.addEventListener("click", async () => {
+  if (!activePluginId) return;
+
   hideStatus();
   showProgress();
 
-  const selectedExtension = extensionSelector.value;
-
-  const result = await window.api.pickFile(
-    selectedExtension,
+  const options = collectOptions();
+  const result = await window.api.convert(
+    activePluginId,
+    options,
     selectedOutputFolder,
   );
 
   if (!result) {
-    // User canceled the file picker
     hideProgress();
     return;
   }
 
-  // Short delay so the user sees 100% before result
   setTimeout(() => {
     hideProgress();
 
     if (result.error) {
-      showStatus(`Error: ${result.error}`, "error");
-    } else if (result.failedFiles.length > 0 && result.successCount > 0) {
+      showStatus(result.error, "error");
+    } else if (result.failedFiles.length > 0) {
       showStatus(
         `${result.successCount}/${result.totalFiles} converted — ${result.failedFiles.length} failed`,
         "error",
       );
-    } else if (result.failedFiles.length > 0) {
-      showStatus(
-        `Conversion failed for ${result.failedFiles.length} file(s): ${result.failedFiles.map((f) => f.file).join(", ")}`,
-        "error",
-      );
     } else {
       showStatus(
-        `${result.successCount} file${result.successCount !== 1 ? "s" : ""} converted successfully`,
+        `${result.successCount} file${result.successCount !== 1 ? "s" : ""} converted`,
         "success",
       );
+      setTimeout(hideStatus, 4000);
     }
-
-    // Auto-hide success after 5 seconds
-    if (result.failedFiles.length === 0 && !result.error) {
-      setTimeout(hideStatus, 5000);
-    }
-  }, 600);
+  }, 500);
 });
+
+// ===== Init =====
+
+async function init() {
+  plugins = await window.api.getPlugins();
+  renderSidebar();
+
+  // Auto-select first plugin if there's only one
+  if (plugins.length === 1) {
+    selectTool(plugins[0].id);
+  }
+}
+
+init();

@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Desktop image file converter built with Electron and Node.js. Converts between PNG, JPG, and GIF with batch support, optional output folder selection, and an extensible plugin system.
+Desktop file conversion toolbox built with Electron and Node.js. Plugin-based architecture — each plugin is a "tool" with its own UI, rendered dynamically from metadata. Currently ships with an image converter (PNG, JPG, GIF).
 
 ## Tech Stack
 
@@ -19,73 +19,83 @@ npm install
 npm start        # runs: electron .
 ```
 
-No test suite configured yet (`npm test` is a placeholder).
-
 ## Project Structure
 
 ```
 Converti/
-  main.js                     Electron main process (window, IPC handlers, plugin loading)
-  preload.js                  contextBridge IPC bridge (exposes window.api to renderer)
-  renderer.js                 UI event handlers, state, feedback display
-  index.html                  Single-page UI: format dropdown, buttons, progress bar, status
-  css/style.css               Dark-theme design system with CSS custom properties
-  core/plugin-loader.js       Reads plugins/ directory, loads metadata + modules
+  main.js                     Electron main process (window, IPC, plugin loading)
+  preload.js                  contextBridge IPC bridge (window.api)
+  renderer.js                 Dynamic UI: sidebar, form rendering, feedback
+  index.html                  Toolbox layout: sidebar + content area
+  css/style.css               Minimalistic dark theme
+  core/plugin-loader.js       Scans plugins/ dir, loads metadata + modules
   plugins/
     image-converter/
-      plugin.json             Plugin metadata (id, name, version, category)
-      index.js                Image conversion via sharp (convert function)
+      plugin.json             Metadata: id, name, icon, options[], fileFilter
+      index.js                convert(inputPath, outputFolder, options)
   package.json                Entry point: main.js
 ```
 
 ## Architecture
 
-Two-process Electron model:
+### Two-Process Model
 
-- **Main process** (`main.js`) — full Node.js + OS access. Creates the BrowserWindow, loads plugins at startup, handles file dialogs, delegates conversion to plugins, sends progress/error updates.
-- **Renderer process** (`renderer.js`) — runs in the browser context. No direct Node.js access. Communicates with main exclusively through `window.api` (exposed by `preload.js`).
+- **Main process** (`main.js`) — Node.js + OS access. Loads plugins, handles dialogs, delegates conversion to plugin modules.
+- **Renderer process** (`renderer.js`) — browser context. Builds UI dynamically from plugin metadata. No Node.js access — communicates via `window.api`.
 
 ### Plugin System
 
-- `core/plugin-loader.js` scans the `plugins/` directory at startup.
-- Each plugin must have a `plugin.json` (metadata) and `index.js` (module).
-- Plugins are loaded as `{ metadata, module }` objects.
-- `main.js` finds the appropriate plugin by category (e.g. `"image"`) and calls its `convert()` function.
-- The renderer can query available plugins via the `getPlugins` IPC channel.
+Plugins are self-describing tools. Each plugin folder contains:
+
+- `plugin.json` — metadata including `icon`, `options[]` (declarative UI), and `fileFilter`
+- `index.js` — exports `convert(inputPath, outputFolder, options)`
+
+The renderer reads plugin metadata and dynamically renders sidebar icons and option forms. Adding a new plugin auto-generates its UI.
+
+### Plugin JSON Schema
+
+```json
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "icon": "🔧",
+  "description": "What it does",
+  "category": "category",
+  "options": [
+    {
+      "id": "optName",
+      "label": "Label",
+      "type": "select",
+      "choices": [{ "value": "v", "label": "L" }],
+      "default": "v"
+    }
+  ],
+  "fileFilter": { "name": "File Type", "extensions": ["ext1", "ext2"] }
+}
+```
 
 ### IPC Channels
 
-| Channel              | Pattern       | Direction       | Purpose                                                                                |
-| -------------------- | ------------- | --------------- | -------------------------------------------------------------------------------------- |
-| `getPlugins`         | invoke/handle | Renderer → Main | Get list of loaded plugin metadata                                                     |
-| `pickOutputLocation` | invoke/handle | Renderer → Main | Open folder picker dialog                                                              |
-| `pickFile`           | invoke/handle | Renderer → Main | Open file picker + run conversion, returns `{ totalFiles, successCount, failedFiles }` |
-| `conversionProgress` | send/on       | Main → Renderer | Per-file progress percentage (0-100)                                                   |
-| `conversionError`    | send/on       | Main → Renderer | Per-file error info `{ file, error }`                                                  |
-
-## Key Patterns
-
-- Image conversion delegated to plugin: `converter.convert(inputPath, outputPath)`
-- Per-file error tracking: each file wrapped in its own try/catch, failures collected in `failedFiles[]`
-- Result object returned from `pickFile`: `{ totalFiles, successCount, failedFiles }` — consumed by renderer for UI feedback
-- Progress bar: CSS width transition driven by `conversionProgress` events
-- Status messages: success (green) / error (red) with auto-hide after 5 seconds for success
-- Output folder display: shown with truncated path + clear button to reset
-- Dark theme: CSS custom properties for all colors, spacing, radii
+| Channel              | Pattern       | Purpose                                                                                    |
+| -------------------- | ------------- | ------------------------------------------------------------------------------------------ |
+| `getPlugins`         | invoke/handle | Get loaded plugin metadata                                                                 |
+| `pickOutputLocation` | invoke/handle | Folder picker dialog                                                                       |
+| `convert`            | invoke/handle | Generic: `(pluginId, options, outputFolder)` → `{ totalFiles, successCount, failedFiles }` |
+| `conversionProgress` | send/on       | Per-file progress (0-100)                                                                  |
+| `conversionError`    | send/on       | Per-file error `{ file, error }`                                                           |
 
 ## Coding Conventions
 
 - CommonJS (`require` / `module.exports`), not ES modules
-- `async/await` for all asynchronous operations
-- `try/catch` around file operations and dialog calls
-- Vanilla DOM: `document.getElementById`, `addEventListener`
-- Console logging for debugging (`console.log` / `console.error`)
-- Single `css/style.css` file linked from `index.html`
-- CSS custom properties (`--var-name`) for theming
+- `async/await` for all async operations
+- `try/catch` around file operations and dialogs
+- Vanilla DOM, `document.getElementById`, `addEventListener`
+- CSS custom properties for theming
+- `hidden` class for show/hide (not inline styles)
 
 ## Notes
 
-- sharp is a native module — if `npm install` fails, check Node.js version compatibility
+- sharp is a native module — check Node.js version compatibility if `npm install` fails
 - Electron is a devDependency (correct for Electron apps)
-- `"type": "commonjs"` is explicitly set in `package.json`
-- The `@import url()` for Google Fonts in CSS requires an internet connection
+- `"type": "commonjs"` is set in `package.json`
+- CSS `@import url()` for Inter font requires internet

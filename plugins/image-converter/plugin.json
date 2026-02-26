@@ -2,7 +2,25 @@
   "id": "image-converter",
   "name": "Image Converter",
   "version": "1.0.0",
-  "description": "Converts images between JPG, PNG, and GIF formats",
+  "description": "Convert images between formats",
   "category": "image",
-  "author": "A-Simonsen"
+  "icon": "🖼️",
+  "author": "A-Simonsen",
+  "options": [
+    {
+      "id": "format",
+      "label": "Output Format",
+      "type": "select",
+      "choices": [
+        { "value": ".jpg", "label": "JPG" },
+        { "value": ".png", "label": "PNG" },
+        { "value": ".gif", "label": "GIF" }
+      ],
+      "default": ".jpg"
+    }
+  ],
+  "fileFilter": {
+    "name": "Images",
+    "extensions": ["png", "jpg", "jpeg", "gif"]
+  }
 }
