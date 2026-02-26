@@ -1,8 +1,8 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
-  getGreeting() {
-    return "Hello from preload!";
+  getPlugins() {
+    return ipcRenderer.invoke("getPlugins");
   },
 
   pickOutputLocation() {
@@ -16,6 +16,12 @@ contextBridge.exposeInMainWorld("api", {
   onConversionProgress(callback) {
     ipcRenderer.on("conversionProgress", (event, progress) => {
       callback(progress);
+    });
+  },
+
+  onConversionError(callback) {
+    ipcRenderer.on("conversionError", (event, errorInfo) => {
+      callback(errorInfo);
     });
   },
 });

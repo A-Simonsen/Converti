@@ -1,29 +1,66 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Converti</title>
-    <link rel="stylesheet" href="./css/style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
     <div class="container">
-        <h1>Converti</h1>
-    <div>
-        <select id="extension-selecter">
+      <h1>Converti</h1>
+
+      <!-- Format Selection -->
+      <div>
+        <label class="field-label" for="extension-selector"
+          >Output Format</label
+        >
+        <div class="select-wrapper">
+          <select id="extension-selector">
             <option value=".jpg">JPG</option>
             <option value=".png">PNG</option>
             <option value=".gif">GIF</option>
-        </select>
+          </select>
+        </div>
+      </div>
+
+      <!-- Output Location -->
+      <div>
+        <button id="pick-output-location-btn" class="btn btn-secondary">
+          📁 Pick Output Location
+        </button>
+        <div id="output-folder-info" class="output-folder-info">
+          <span class="output-folder-icon">📂</span>
+          <span id="output-folder-path" class="output-folder-path"></span>
+          <button
+            id="clear-output-btn"
+            class="btn-clear"
+            title="Clear selection"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Convert Button -->
+      <div>
+        <button id="pick-file-btn" class="btn btn-primary">
+          Start Converting
+        </button>
+      </div>
+
+      <!-- Progress Area -->
+      <div id="progress-area" class="progress-area">
+        <div class="progress-bar-track">
+          <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        </div>
+        <span id="progress-text" class="progress-text"></span>
+      </div>
+
+      <!-- Status Message (success/error) -->
+      <div id="status-message" class="status-message"></div>
     </div>
-    <div>
-        <button id="pick-output-location-btn" class="btn">Pick Output Location (Optional)</button>
-    </div>
-    <div>
-        <button id="pick-file-btn" class="btn">Start Converting</button>
-        <span id="progress-text"></span>
-    </div>
-    </div>
+
     <script src="renderer.js"></script>
-</body>
+  </body>
 </html>
