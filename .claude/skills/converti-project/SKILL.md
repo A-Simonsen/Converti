@@ -1,9 +1,12 @@
 ---
 name: converti-project
+version: 0.1.0
 description: >
-  Converti-specific project knowledge. Use when working on image conversion
-  features, the sharp library, adding new format support, modifying the
-  conversion pipeline, progress tracking, or output path logic.
+  This skill should be used when the user asks to "add a new image format",
+  "add conversion support", "modify the conversion pipeline", "change output
+  path logic", "update progress tracking", "work with sharp", "add quality
+  options", "fix file conversion", "add drag and drop", or mentions the
+  Converti app's UI structure, element IDs, or known limitations.
 ---
 
 # Converti Project Skill
@@ -12,24 +15,25 @@ description: >
 
 Full data flow from user action to file output:
 
-1. User selects target format from `<select id="extension-selecter">` (values: `.jpg`, `.png`, `.gif`)
-2. User optionally clicks "Pick Output Location" → calls `window.api.pickOutputLocation()` → result stored in `selectedOutputFolder` (module-level variable in `renderer.js`)
-3. User clicks "Start Converting" → calls `window.api.pickFile(selectedExtension, selectedOutputFolder)`
-4. Main process opens multi-file dialog: `dialog.showOpenDialog` with `["multiSelections", "openFile"]`
+1. The target format is selected from `<select id="extension-selecter">` (values: `.jpg`, `.png`, `.gif`).
+2. Optionally, clicking "Pick Output Location" calls `window.api.pickOutputLocation()` — the result is stored in `selectedOutputFolder` (module-level variable in `renderer.js`).
+3. Clicking "Start Converting" calls `window.api.pickFile(selectedExtension, selectedOutputFolder)`.
+4. The main process opens a multi-file dialog: `dialog.showOpenDialog` with `["multiSelections", "openFile"]`.
 5. For each selected file:
-   - Extract old extension: `path.extname(inputPath)`
-   - Build new filename: `path.basename(inputPath, oldExt) + selectedExtension`
-   - Determine output path: custom folder via `path.join(outputFolder, newFileName)` or in-place via `inputPath.replace(oldExt, selectedExtension)`
+   - Extract the old extension: `path.extname(inputPath)`
+   - Build the new filename: `path.basename(inputPath, oldExt) + selectedExtension`
+   - Determine the output path: custom folder via `path.join(outputFolder, newFileName)` or in-place via `inputPath.replace(oldExt, selectedExtension)`
    - Convert: `sharp(inputPath).toFormat(extWithoutDot).toFile(outputPath)`
    - Send progress: `mainWindow.webContents.send("conversionProgress", percentage)`
-6. Renderer displays `"${progress}% complete"`, clears 2 seconds after reaching 100%
+6. The renderer displays `"${progress}% complete"` and clears it 2 seconds after reaching 100%.
 
 ## The sharp Library
 
-- High-performance image processing backed by libvips (native C++ bindings)
-- Core conversion: `sharp(inputPath).toFormat(formatString).toFile(outputPath)`
+sharp is a high-performance image processing library backed by libvips (native C++ bindings).
+
+- Core conversion pattern: `sharp(inputPath).toFormat(formatString).toFile(outputPath)`
 - `toFormat()` accepts format strings **without dots**: `"jpg"`, `"png"`, `"gif"`, `"webp"`, `"tiff"`, `"avif"`
-- Returns a Promise — always `await`
+- Returns a Promise — always `await` the result.
 - Quality options via format-specific methods:
   ```javascript
   sharp(input).jpeg({ quality: 80 }).toFile(output)
@@ -37,17 +41,19 @@ Full data flow from user action to file output:
   sharp(input).webp({ quality: 75 }).toFile(output)
   ```
 - Chainable with other operations: `.resize()`, `.rotate()`, `.flip()`, `.sharpen()`, etc.
-- Native module — requires compatible Node.js version and build tools for installation
+- Native module — requires a compatible Node.js version and build tools for installation.
 
 ## Adding a New Output Format
 
-1. **index.html** — add an `<option>` to `#extension-selecter`:
+To add a new format (e.g., WebP):
+
+1. **index.html** — Add an `<option>` to `#extension-selecter`:
    ```html
    <option value=".webp">WebP</option>
    ```
-   Value **must** include the leading dot.
+   The value **must** include the leading dot.
 
-2. **main.js** — update the file dialog filter to accept the new format as input:
+2. **main.js** — Update the file dialog filter to accept the new format as input:
    ```javascript
    filters: [
      { name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "webp"] }
@@ -60,14 +66,14 @@ Formats sharp supports that could be added: `webp`, `tiff`, `avif`, `heif` (HEIC
 
 ## Progress Tracking System
 
-- Uses an indexed `for` loop (not `for...of`) to access the index `i`
-- Percentage: `Math.round(((i + 1) / totalFiles) * 100)`
+- An indexed `for` loop (not `for...of`) provides access to the index `i`.
+- Percentage calculation: `Math.round(((i + 1) / totalFiles) * 100)`
 - Sent from main: `mainWindow.webContents.send("conversionProgress", progress)`
 - Received in renderer: `window.api.onConversionProgress(callback)`
 - Displayed in `<span id="progress-text">` as `"${progress}% complete"`
-- Auto-clears via `setTimeout(() => { progressText.textContent = ""; }, 2000)` at 100%
+- Auto-clears via `setTimeout(() => { progressText.textContent = ""; }, 2000)` at 100%.
 
-To extend (e.g., show current filename): change the IPC payload from a number to an object `{ progress, filename }` and update both main.js sender and renderer.js receiver.
+To extend with additional data (e.g., current filename): change the IPC payload from a number to an object `{ progress, filename }` and update both the main.js sender and renderer.js receiver.
 
 ## Output Path Logic
 
@@ -89,21 +95,21 @@ outputPath = path.join(path.dirname(inputPath), fileName + selectedExtension);
 ## UI Structure
 
 Element IDs (referenced by `renderer.js`):
-- `#extension-selecter` — format dropdown (note: typo in "selecter", keep consistent)
+- `#extension-selecter` — format dropdown (note: typo "selecter" not "selector"; maintain for consistency unless intentionally renaming across all files)
 - `#pick-output-location-btn` — optional output folder picker button
 - `#pick-file-btn` — triggers file selection and conversion
 - `#progress-text` — progress display span
 
 Renderer state (module-level variables in `renderer.js`):
-- `selectedOutputFolder` (`let`, initially `null`) — persists chosen output folder across clicks
+- `selectedOutputFolder` (`let`, initially `null`) — persists the chosen output folder across clicks
 - `progressText` (`const`) — cached DOM reference to `#progress-text`
 
 ## Known Limitations
 
-- No input validation (converting PNG→PNG creates a duplicate)
-- No per-file error handling — one failure in the batch stops all remaining files
-- No drag-and-drop file support
-- No image preview before conversion
-- No conversion quality/resize options exposed in UI
-- `onConversionProgress` listener accumulates if called multiple times (no `removeListener`)
-- Progress is file-count-based, not byte-based (1MB and 100MB files count equally)
+- No input validation (converting PNG to PNG creates a duplicate).
+- No per-file error handling — one failure in the batch stops all remaining files.
+- No drag-and-drop file support.
+- No image preview before conversion.
+- No conversion quality/resize options exposed in the UI.
+- `onConversionProgress` listener accumulates if called multiple times (no `removeListener`).
+- Progress is file-count-based, not byte-based (a 1MB and 100MB file count equally).
