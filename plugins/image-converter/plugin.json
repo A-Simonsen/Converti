@@ -4,23 +4,18 @@
   "version": "1.0.0",
   "description": "Convert images between formats",
   "category": "image",
-  "icon": "🖼️",
+  "icon": "IMG",
   "author": "A-Simonsen",
   "options": [
     {
       "id": "format",
       "label": "Output Format",
       "type": "select",
-      "choices": [
-        { "value": ".jpg", "label": "JPG" },
-        { "value": ".png", "label": "PNG" },
-        { "value": ".gif", "label": "GIF" }
-      ],
       "default": ".jpg"
     }
   ],
   "fileFilter": {
     "name": "Images",
-    "extensions": ["png", "jpg", "jpeg", "gif"]
+    "extensions": ["png", "jpg", "jpeg", "gif", "webp", "avif", "heic", "heif", "tif", "tiff"]
   }
 }

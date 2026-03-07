@@ -25,9 +25,15 @@ function loadPlugins() {
 
     const metadata = JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
     const pluginModule = require(modulePath);
+    const resolvedMetadata =
+      typeof pluginModule.getMetadata === "function"
+        ? pluginModule.getMetadata(metadata)
+        : metadata;
 
-    console.log(`Loaded plugin: ${metadata.name} (${metadata.id})`);
-    plugins.push({ metadata, module: pluginModule });
+    console.log(
+      `Loaded plugin: ${resolvedMetadata.name} (${resolvedMetadata.id})`,
+    );
+    plugins.push({ metadata: resolvedMetadata, module: pluginModule });
   });
 
   return plugins;

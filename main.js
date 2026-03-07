@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const fs = require("fs");
 const path = require("path");
 const { loadPlugins } = require("./core/plugin-loader");
 
@@ -25,12 +26,10 @@ function main() {
     mainWindow.loadFile("index.html");
   });
 
-  // Get available plugins (metadata only)
   ipcMain.handle("getPlugins", () => {
     return plugins.map((p) => p.metadata);
   });
 
-  // Pick output folder
   ipcMain.handle("pickOutputLocation", async () => {
     try {
       const result = await dialog.showOpenDialog({
@@ -48,7 +47,6 @@ function main() {
     }
   });
 
-  // Generic convert handler — works with any plugin
   ipcMain.handle("convert", async (event, pluginId, options, outputFolder) => {
     const plugin = getPluginById(pluginId);
     if (!plugin) {
@@ -60,7 +58,36 @@ function main() {
       };
     }
 
-    // Build file filter from plugin metadata
+    if (!plugin.module || typeof plugin.module.convert !== "function") {
+      return {
+        totalFiles: 0,
+        successCount: 0,
+        failedFiles: [],
+        error: `Plugin "${pluginId}" cannot convert files`,
+      };
+    }
+
+    if (outputFolder) {
+      try {
+        const outputStats = await fs.promises.stat(outputFolder);
+        if (!outputStats.isDirectory()) {
+          return {
+            totalFiles: 0,
+            successCount: 0,
+            failedFiles: [],
+            error: "The selected output location is not a folder",
+          };
+        }
+      } catch (error) {
+        return {
+          totalFiles: 0,
+          successCount: 0,
+          failedFiles: [],
+          error: `Output folder is not available: ${error.message}`,
+        };
+      }
+    }
+
     const fileFilter = plugin.metadata.fileFilter || {
       name: "All Files",
       extensions: ["*"],
@@ -85,11 +112,11 @@ function main() {
             successCount++;
           } catch (fileError) {
             failedFiles.push({
-              file: path.basename(inputPath),
+              file: inputPath,
               error: fileError.message,
             });
             mainWindow.webContents.send("conversionError", {
-              file: path.basename(inputPath),
+              file: inputPath,
               error: fileError.message,
             });
           }
@@ -98,10 +125,18 @@ function main() {
           mainWindow.webContents.send("conversionProgress", progress);
         }
 
-        return { totalFiles, successCount, failedFiles };
+        return {
+          totalFiles,
+          successCount,
+          failedFiles,
+          error:
+            successCount === 0 && failedFiles.length > 0
+              ? "All selected files failed to convert"
+              : null,
+        };
       }
 
-      return null; // User canceled
+      return null;
     } catch (error) {
       console.error("Error in convert handler:", error);
       return {

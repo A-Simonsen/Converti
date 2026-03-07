@@ -20,8 +20,6 @@ const progressFill = document.getElementById("progress-fill");
 const progressText = document.getElementById("progress-text");
 const statusMessage = document.getElementById("status-message");
 
-// ===== Sidebar =====
-
 function renderSidebar() {
   toolList.innerHTML = "";
 
@@ -29,7 +27,7 @@ function renderSidebar() {
     const btn = document.createElement("button");
     btn.className = "tool-icon-btn";
     btn.title = plugin.name;
-    btn.textContent = plugin.icon || "🔧";
+    btn.textContent = plugin.icon || "Tool";
     btn.dataset.pluginId = plugin.id;
 
     btn.addEventListener("click", () => selectTool(plugin.id));
@@ -42,28 +40,19 @@ function selectTool(pluginId) {
   const plugin = plugins.find((p) => p.id === pluginId);
   if (!plugin) return;
 
-  // Update sidebar active state
   document.querySelectorAll(".tool-icon-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.pluginId === pluginId);
   });
 
-  // Show tool view, hide empty state
   emptyState.classList.add("hidden");
   toolView.classList.remove("hidden");
 
-  // Populate header
   toolName.textContent = plugin.name;
   toolDescription.textContent = plugin.description;
-
-  // Render options
   renderOptions(plugin.options || []);
-
-  // Reset status
   hideStatus();
   hideProgress();
 }
-
-// ===== Dynamic Options =====
 
 function renderOptions(options) {
   toolOptions.innerHTML = "";
@@ -85,7 +74,7 @@ function renderOptions(options) {
       select.id = `opt-${opt.id}`;
       select.dataset.optionId = opt.id;
 
-      opt.choices.forEach((choice) => {
+      (opt.choices || []).forEach((choice) => {
         const option = document.createElement("option");
         option.value = choice.value;
         option.textContent = choice.label;
@@ -109,8 +98,6 @@ function collectOptions() {
   return options;
 }
 
-// ===== Output Folder =====
-
 pickOutputBtn.addEventListener("click", async () => {
   const folder = await window.api.pickOutputLocation();
   if (folder) {
@@ -133,15 +120,13 @@ function updateFolderDisplay() {
   }
 }
 
-// ===== Progress =====
-
 window.api.onConversionProgress((progress) => {
   progressFill.style.width = `${progress}%`;
   progressText.textContent = `${progress}%`;
 });
 
 window.api.onConversionError((info) => {
-  console.error(`Error: ${info.file} — ${info.error}`);
+  console.error(`Error: ${info.file} - ${info.error}`);
 });
 
 function showProgress() {
@@ -154,8 +139,6 @@ function hideProgress() {
   progressArea.classList.add("hidden");
 }
 
-// ===== Status =====
-
 function showStatus(message, type) {
   statusMessage.textContent = message;
   statusMessage.className = `status-message ${type}`;
@@ -163,9 +146,8 @@ function showStatus(message, type) {
 
 function hideStatus() {
   statusMessage.className = "status-message hidden";
+  statusMessage.textContent = "";
 }
-
-// ===== Convert =====
 
 convertBtn.addEventListener("click", async () => {
   if (!activePluginId) return;
@@ -189,10 +171,14 @@ convertBtn.addEventListener("click", async () => {
     hideProgress();
 
     if (result.error) {
-      showStatus(result.error, "error");
+      const firstFailure = result.failedFiles?.[0];
+      const details = firstFailure
+        ? ` First failure: ${firstFailure.file} (${firstFailure.error})`
+        : "";
+      showStatus(`${result.error}${details}`, "error");
     } else if (result.failedFiles.length > 0) {
       showStatus(
-        `${result.successCount}/${result.totalFiles} converted — ${result.failedFiles.length} failed`,
+        `${result.successCount}/${result.totalFiles} converted - ${result.failedFiles.length} failed. First failure: ${result.failedFiles[0].file} (${result.failedFiles[0].error})`,
         "error",
       );
     } else {
@@ -205,13 +191,10 @@ convertBtn.addEventListener("click", async () => {
   }, 500);
 });
 
-// ===== Init =====
-
 async function init() {
   plugins = await window.api.getPlugins();
   renderSidebar();
 
-  // Auto-select first plugin if there's only one
   if (plugins.length === 1) {
     selectTool(plugins[0].id);
   }
