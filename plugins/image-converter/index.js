@@ -2,86 +2,132 @@ const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
 
-const FORMAT_LABELS = {
-  jpg: "JPG",
-  jpeg: "JPEG",
-  png: "PNG",
-  webp: "WebP",
-  gif: "GIF",
-  avif: "AVIF",
-  heic: "HEIC",
-  heif: "HEIF",
-  tif: "TIFF",
-  tiff: "TIFF",
-  jp2: "JPEG 2000",
-  j2k: "JPEG 2000",
-  jpx: "JPEG 2000",
+const INPUT_FORMAT_IDS = ["jpeg", "png", "webp", "gif", "heif", "tiff", "svg"];
+const OUTPUT_OVERRIDES = {
+  jpeg: {
+    extension: ".jpg",
+    label: "JPG",
+  },
+  png: {
+    extension: ".png",
+    label: "PNG",
+  },
+  webp: {
+    extension: ".webp",
+    label: "WebP",
+  },
+  gif: {
+    extension: ".gif",
+    label: "GIF",
+  },
+  heif: [
+    {
+      extension: ".avif",
+      label: "AVIF",
+      encoderOptions: { compression: "av1", quality: 65 },
+    },
+    {
+      extension: ".heif",
+      label: "HEIF",
+      encoderOptions: { compression: "av1", quality: 65 },
+    },
+    {
+      extension: ".heic",
+      label: "HEIC",
+      encoderOptions: { compression: "av1", quality: 65 },
+    },
+  ],
+  tiff: {
+    extension: ".tiff",
+    label: "TIFF",
+  },
 };
 
-const FORMAT_ALIASES = {
-  jpg: "jpeg",
-  jpeg: "jpeg",
-  tif: "tiff",
-  tiff: "tiff",
-  avif: "heif",
-  heic: "heif",
-  heif: "heif",
-  jp2: "jp2k",
-  j2k: "jp2k",
-  jpx: "jp2k",
-};
+function normalizeExtension(suffix) {
+  if (!suffix || !suffix.startsWith(".")) {
+    return null;
+  }
 
-const FORMAT_CANDIDATES = [
-  "jpg",
-  "jpeg",
-  "png",
-  "webp",
-  "gif",
-  "avif",
-  "heic",
-  "heif",
-  "tif",
-  "tiff",
-  "jp2",
-  "j2k",
-  "jpx",
-];
+  const normalized = suffix.slice(1).toLowerCase();
+  if (!normalized || normalized.includes(".")) {
+    return null;
+  }
 
-function getSharpFormatId(extension) {
-  return FORMAT_ALIASES[extension] || extension;
+  return normalized;
 }
 
-function getSupportedFormats() {
+function getInputExtensions() {
+  const extensions = new Set();
+
+  for (const formatId of INPUT_FORMAT_IDS) {
+    const format = sharp.format[formatId];
+    if (!format?.input?.file) {
+      continue;
+    }
+
+    for (const suffix of format.input.fileSuffix || []) {
+      const extension = normalizeExtension(suffix);
+      if (extension) {
+        extensions.add(extension);
+      }
+    }
+
+    for (const alias of format.output?.alias || []) {
+      const extension = String(alias).replace(/^\./, "").toLowerCase();
+      if (extension && !extension.includes(".")) {
+        extensions.add(extension);
+      }
+    }
+  }
+
+  return Array.from(extensions).sort();
+}
+
+function getOutputFormats() {
   const formats = [];
 
-  for (const extension of FORMAT_CANDIDATES) {
-    const sharpFormatId = getSharpFormatId(extension);
-    const sharpFormat = sharp.format[sharpFormatId];
-    if (!sharpFormat?.output?.file) {
+  for (const [formatId, override] of Object.entries(OUTPUT_OVERRIDES)) {
+    const format = sharp.format[formatId];
+    if (!format?.output?.file) {
+      continue;
+    }
+
+    if (Array.isArray(override)) {
+      formats.push(
+        ...override.map((item) => ({
+          value: item.extension,
+          label: item.label,
+          sharpFormat: formatId,
+          encoderOptions: item.encoderOptions || null,
+        })),
+      );
       continue;
     }
 
     formats.push({
-      value: `.${extension}`,
-      label: FORMAT_LABELS[extension] || extension.toUpperCase(),
-      sharpFormat: sharpFormatId,
+      value: override.extension,
+      label: override.label,
+      sharpFormat: formatId,
+      encoderOptions: override.encoderOptions || null,
     });
   }
 
-  return formats;
+  return formats.sort((left, right) => left.label.localeCompare(right.label));
 }
 
 function getSupportedFormatMap() {
-  return new Map(
-    getSupportedFormats().map((item) => [item.value.toLowerCase(), item]),
-  );
+  return new Map(getOutputFormats().map((item) => [item.value.toLowerCase(), item]));
 }
 
 function getMetadata(baseMetadata) {
-  const formats = getSupportedFormats();
-  const defaultFormat = formats.some((item) => item.value === ".jpg")
-    ? ".jpg"
-    : formats[0]?.value;
+  const outputFormats = getOutputFormats();
+  const inputExtensions = getInputExtensions();
+  const defaultFormat = outputFormats.find((item) => item.value === ".jpg")?.value
+    || outputFormats[0]?.value;
+
+  if (!defaultFormat) {
+    throw new Error("No writable image formats are available in the installed sharp build");
+  }
 
   return {
     ...baseMetadata,
@@ -89,19 +135,14 @@ function getMetadata(baseMetadata) {
       option.id === "format"
         ? {
             ...option,
-            choices: formats.map(({ value, label }) => ({ value, label })),
+            choices: outputFormats.map(({ value, label }) => ({ value, label })),
             default: defaultFormat,
           }
         : option,
     ),
     fileFilter: {
-      ...(baseMetadata.fileFilter || { name: "Images", extensions: [] }),
-      extensions: Array.from(
-        new Set([
-          ...(baseMetadata.fileFilter?.extensions || []),
-          ...formats.map((item) => item.value.slice(1)),
-        ]),
-      ),
+      name: baseMetadata.fileFilter?.name || "Images",
+      extensions: inputExtensions,
     },
   };
 }
@@ -131,8 +172,8 @@ function buildOutputPath(inputPath, outputFolder, extension) {
   return path.join(targetDirectory, `${baseName}${extension}`);
 }
 
-function applyFormat(pipeline, sharpFormat, metadata) {
-  switch (sharpFormat) {
+function applyFormat(pipeline, formatInfo, metadata) {
+  switch (formatInfo.sharpFormat) {
     case "jpeg":
       return metadata.hasAlpha
         ? pipeline
@@ -146,13 +187,11 @@ function applyFormat(pipeline, sharpFormat, metadata) {
     case "gif":
       return pipeline.gif({ effort: 7 });
     case "heif":
-      return pipeline.heif({ quality: 65, compression: "av1" });
+      return pipeline.heif(formatInfo.encoderOptions || { compression: "av1", quality: 65 });
     case "tiff":
       return pipeline.tiff({ quality: 90, compression: "lzw" });
-    case "jp2k":
-      return pipeline.jp2({ quality: 90 });
     default:
-      return pipeline.toFormat(sharpFormat);
+      return pipeline.toFormat(formatInfo.sharpFormat);
   }
 }
 
@@ -190,9 +229,7 @@ async function convert(inputPath, outputFolder, options = {}) {
 
   try {
     const pipeline = sharp(inputPath, { animated: true, failOn: "warning" });
-    await applyFormat(pipeline, formatInfo.sharpFormat, metadata).toFile(
-      outputPath,
-    );
+    await applyFormat(pipeline, formatInfo, metadata).toFile(outputPath);
   } catch (error) {
     throw new Error(`Conversion failed: ${error.message}`);
   }

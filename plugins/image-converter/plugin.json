@@ -16,6 +16,6 @@
   ],
   "fileFilter": {
     "name": "Images",
-    "extensions": ["png", "jpg", "jpeg", "gif", "webp", "avif", "heic", "heif", "tif", "tiff"]
+    "extensions": ["jpg", "jpeg", "png", "webp", "gif", "avif", "heic", "heif", "tif", "tiff", "svg"]
   }
 }

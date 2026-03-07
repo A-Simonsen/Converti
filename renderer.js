@@ -82,6 +82,7 @@ function renderOptions(options) {
         select.appendChild(option);
       });
 
+      select.disabled = (opt.choices || []).length === 0;
       wrap.appendChild(select);
       group.appendChild(wrap);
     }
@@ -154,41 +155,49 @@ convertBtn.addEventListener("click", async () => {
 
   hideStatus();
   showProgress();
+  convertBtn.disabled = true;
 
-  const options = collectOptions();
-  const result = await window.api.convert(
-    activePluginId,
-    options,
-    selectedOutputFolder,
-  );
+  try {
+    const options = collectOptions();
+    const result = await window.api.convert(
+      activePluginId,
+      options,
+      selectedOutputFolder,
+    );
 
-  if (!result) {
-    hideProgress();
-    return;
-  }
-
-  setTimeout(() => {
-    hideProgress();
-
-    if (result.error) {
-      const firstFailure = result.failedFiles?.[0];
-      const details = firstFailure
-        ? ` First failure: ${firstFailure.file} (${firstFailure.error})`
-        : "";
-      showStatus(`${result.error}${details}`, "error");
-    } else if (result.failedFiles.length > 0) {
-      showStatus(
-        `${result.successCount}/${result.totalFiles} converted - ${result.failedFiles.length} failed. First failure: ${result.failedFiles[0].file} (${result.failedFiles[0].error})`,
-        "error",
-      );
-    } else {
-      showStatus(
-        `${result.successCount} file${result.successCount !== 1 ? "s" : ""} converted`,
-        "success",
-      );
-      setTimeout(hideStatus, 4000);
+    if (!result) {
+      hideProgress();
+      return;
     }
-  }, 500);
+
+    setTimeout(() => {
+      hideProgress();
+
+      if (result.error) {
+        const firstFailure = result.failedFiles?.[0];
+        const details = firstFailure
+          ? ` First failure: ${firstFailure.file} (${firstFailure.error})`
+          : "";
+        showStatus(`${result.error}${details}`, "error");
+      } else if (result.failedFiles.length > 0) {
+        showStatus(
+          `${result.successCount}/${result.totalFiles} converted - ${result.failedFiles.length} failed. First failure: ${result.failedFiles[0].file} (${result.failedFiles[0].error})`,
+          "error",
+        );
+      } else {
+        showStatus(
+          `${result.successCount} file${result.successCount !== 1 ? "s" : ""} converted`,
+          "success",
+        );
+        setTimeout(hideStatus, 4000);
+      }
+    }, 500);
+  } catch (error) {
+    hideProgress();
+    showStatus(`Conversion failed: ${error.message}`, "error");
+  } finally {
+    convertBtn.disabled = false;
+  }
 });
 
 async function init() {
