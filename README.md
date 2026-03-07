@@ -10,7 +10,7 @@ I'm a CS student with a background in C# and Java, so a lot of the learning is a
 
 ## The Idea
 
-Converti starts as an image format converter, but the goal is to build a **plugin system** so it can be extended to do almost anything — lorem ipsum generation, QR codes, markdown conversion, and whatever else I feel like adding.
+Converti starts as an image and video format converter, but the goal is to build a **plugin system** so it can be extended to do almost anything — lorem ipsum generation, QR codes, markdown conversion, and whatever else I feel like adding.
 
 ## Tech Stack
 
@@ -25,3 +25,4 @@ Converti starts as an image format converter, but the goal is to build a **plugi
 ## License
 
 [MIT](LICENSE)
+

@@ -1,0 +1,21 @@
+{
+  "id": "video-converter",
+  "name": "Video Converter",
+  "version": "1.0.0",
+  "description": "Convert videos between common formats",
+  "category": "video",
+  "icon": "VID",
+  "author": "A-Simonsen",
+  "options": [
+    {
+      "id": "format",
+      "label": "Output Format",
+      "type": "select",
+      "default": ".mp4"
+    }
+  ],
+  "fileFilter": {
+    "name": "Videos",
+    "extensions": ["mp4", "mov", "mkv", "avi", "webm", "m4v", "mpeg", "mpg"]
+  }
+}

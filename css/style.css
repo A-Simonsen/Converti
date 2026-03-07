@@ -234,6 +234,26 @@ body {
   font-weight: 700;
 }
 
+.option-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  outline: none;
+  box-shadow: var(--shadow);
+  transition: all var(--transition);
+}
+
+.option-input:focus {
+  box-shadow: var(--shadow-hover);
+  transform: translate(2px, 2px);
+}
+
 /* ===== Buttons ===== */
 .btn {
   display: flex;

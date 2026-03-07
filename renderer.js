@@ -10,6 +10,7 @@ const toolView = document.getElementById("tool-view");
 const toolName = document.getElementById("tool-name");
 const toolDescription = document.getElementById("tool-description");
 const toolOptions = document.getElementById("tool-options");
+const outputSection = document.querySelector(".output-section");
 const pickOutputBtn = document.getElementById("pick-output-btn");
 const outputFolderInfo = document.getElementById("output-folder-info");
 const outputFolderPath = document.getElementById("output-folder-path");
@@ -19,6 +20,10 @@ const progressArea = document.getElementById("progress-area");
 const progressFill = document.getElementById("progress-fill");
 const progressText = document.getElementById("progress-text");
 const statusMessage = document.getElementById("status-message");
+
+function getActivePlugin() {
+  return plugins.find((plugin) => plugin.id === activePluginId) || null;
+}
 
 function renderSidebar() {
   toolList.innerHTML = "";
@@ -35,9 +40,14 @@ function renderSidebar() {
   });
 }
 
+function updateOutputSection(plugin) {
+  const usesGeneratedOutput = plugin?.mode === "generate";
+  outputSection.classList.toggle("hidden", usesGeneratedOutput);
+}
+
 function selectTool(pluginId) {
   activePluginId = pluginId;
-  const plugin = plugins.find((p) => p.id === pluginId);
+  const plugin = getActivePlugin();
   if (!plugin) return;
 
   document.querySelectorAll(".tool-icon-btn").forEach((btn) => {
@@ -50,6 +60,8 @@ function selectTool(pluginId) {
   toolName.textContent = plugin.name;
   toolDescription.textContent = plugin.description;
   renderOptions(plugin.options || []);
+  updateOutputSection(plugin);
+  convertBtn.textContent = plugin.actionLabel || "Convert";
   hideStatus();
   hideProgress();
 }
@@ -85,6 +97,34 @@ function renderOptions(options) {
       select.disabled = (opt.choices || []).length === 0;
       wrap.appendChild(select);
       group.appendChild(wrap);
+    } else if (opt.type === "number" || opt.type === "text") {
+      const input = document.createElement("input");
+      input.id = `opt-${opt.id}`;
+      input.dataset.optionId = opt.id;
+      input.type = opt.type;
+      input.className = "option-input";
+
+      if (opt.default !== undefined) {
+        input.value = String(opt.default);
+      }
+
+      if (opt.min !== undefined) {
+        input.min = String(opt.min);
+      }
+
+      if (opt.max !== undefined) {
+        input.max = String(opt.max);
+      }
+
+      if (opt.step !== undefined) {
+        input.step = String(opt.step);
+      }
+
+      if (opt.placeholder) {
+        input.placeholder = opt.placeholder;
+      }
+
+      group.appendChild(input);
     }
 
     toolOptions.appendChild(group);
@@ -158,11 +198,12 @@ convertBtn.addEventListener("click", async () => {
   convertBtn.disabled = true;
 
   try {
+    const activePlugin = getActivePlugin();
     const options = collectOptions();
     const result = await window.api.convert(
       activePluginId,
       options,
-      selectedOutputFolder,
+      activePlugin?.mode === "generate" ? null : selectedOutputFolder,
     );
 
     if (!result) {
@@ -181,12 +222,13 @@ convertBtn.addEventListener("click", async () => {
         showStatus(`${result.error}${details}`, "error");
       } else if (result.failedFiles.length > 0) {
         showStatus(
-          `${result.successCount}/${result.totalFiles} converted - ${result.failedFiles.length} failed. First failure: ${result.failedFiles[0].file} (${result.failedFiles[0].error})`,
+          `${result.successCount}/${result.totalFiles} completed - ${result.failedFiles.length} failed. First failure: ${result.failedFiles[0].file} (${result.failedFiles[0].error})`,
           "error",
         );
       } else {
+        const successLabel = activePlugin?.mode === "generate" ? "generated" : "converted";
         showStatus(
-          `${result.successCount} file${result.successCount !== 1 ? "s" : ""} converted`,
+          `${result.successCount} file${result.successCount !== 1 ? "s" : ""} ${successLabel}`,
           "success",
         );
         setTimeout(hideStatus, 4000);
