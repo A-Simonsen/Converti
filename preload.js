@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, clipboard } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
   getPlugins() {
@@ -11,6 +11,14 @@ contextBridge.exposeInMainWorld("api", {
 
   convert(pluginId, options, outputFolder) {
     return ipcRenderer.invoke("convert", pluginId, options, outputFolder);
+  },
+
+  preview(pluginId, options) {
+    return ipcRenderer.invoke("preview", pluginId, options);
+  },
+
+  copyText(text) {
+    clipboard.writeText(text);
   },
 
   onConversionProgress(callback) {

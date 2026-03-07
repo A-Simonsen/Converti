@@ -27,65 +27,6 @@ async function validateOutputFolder(outputFolder) {
   return null;
 }
 
-async function runGeneratorPlugin(plugin, options) {
-  if (!plugin.module || typeof plugin.module.generate !== "function") {
-    return {
-      totalFiles: 0,
-      successCount: 0,
-      failedFiles: [],
-      error: `Plugin "${plugin.metadata.id}" cannot generate files`,
-    };
-  }
-
-  const saveDialog = plugin.metadata.saveDialog || {};
-  const result = await dialog.showSaveDialog({
-    title: saveDialog.title || `Save ${plugin.metadata.name}`,
-    defaultPath: saveDialog.defaultFileName || `${plugin.metadata.id}.txt`,
-    filters: saveDialog.filters || [
-      {
-        name: "All Files",
-        extensions: ["*"],
-      },
-    ],
-  });
-
-  if (result.canceled || !result.filePath) {
-    return null;
-  }
-
-  mainWindow.webContents.send("conversionProgress", 25);
-
-  try {
-    await plugin.module.generate(result.filePath, options);
-    mainWindow.webContents.send("conversionProgress", 100);
-
-    return {
-      totalFiles: 1,
-      successCount: 1,
-      failedFiles: [],
-      error: null,
-    };
-  } catch (error) {
-    mainWindow.webContents.send("conversionError", {
-      file: result.filePath,
-      error: error.message,
-    });
-    mainWindow.webContents.send("conversionProgress", 100);
-
-    return {
-      totalFiles: 1,
-      successCount: 0,
-      failedFiles: [
-        {
-          file: result.filePath,
-          error: error.message,
-        },
-      ],
-      error: "The generated file could not be created",
-    };
-  }
-}
-
 async function runConverterPlugin(plugin, options, outputFolder) {
   if (!plugin.module || typeof plugin.module.convert !== "function") {
     return {
@@ -193,6 +134,19 @@ function main() {
     }
   });
 
+  ipcMain.handle("preview", async (event, pluginId, options) => {
+    const plugin = getPluginById(pluginId);
+    if (!plugin) {
+      throw new Error(`Plugin "${pluginId}" not found`);
+    }
+
+    if (!plugin.module || typeof plugin.module.preview !== "function") {
+      throw new Error(`Plugin "${pluginId}" cannot preview content`);
+    }
+
+    return plugin.module.preview(options);
+  });
+
   ipcMain.handle("convert", async (event, pluginId, options, outputFolder) => {
     const plugin = getPluginById(pluginId);
     if (!plugin) {
@@ -205,10 +159,6 @@ function main() {
     }
 
     try {
-      if (plugin.metadata.mode === "generate") {
-        return await runGeneratorPlugin(plugin, options);
-      }
-
       return await runConverterPlugin(plugin, options, outputFolder);
     } catch (error) {
       console.error("Error in convert handler:", error);

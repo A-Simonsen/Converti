@@ -2,12 +2,11 @@
   "id": "lorem-ipsum",
   "name": "Lorem Ipsum",
   "version": "1.0.0",
-  "description": "Generate placeholder text and save it as a text file",
+  "description": "Generate placeholder text in real time and copy it directly",
   "category": "text",
   "icon": "TXT",
   "author": "A-Simonsen",
-  "mode": "generate",
-  "actionLabel": "Generate",
+  "mode": "preview",
   "options": [
     {
       "id": "paragraphs",
@@ -18,15 +17,5 @@
       "max": 20,
       "step": 1
     }
-  ],
-  "saveDialog": {
-    "title": "Save Lorem Ipsum",
-    "defaultFileName": "lorem-ipsum.txt",
-    "filters": [
-      {
-        "name": "Text Files",
-        "extensions": ["txt"]
-      }
-    ]
-  }
+  ]
 }

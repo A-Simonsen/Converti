@@ -1,6 +1,3 @@
-const fs = require("fs");
-const path = require("path");
-
 const WORDS = [
   "lorem",
   "ipsum",
@@ -73,6 +70,15 @@ const WORDS = [
   "laborum"
 ];
 
+function getParagraphCount(options = {}) {
+  const paragraphCount = Number.parseInt(options.paragraphs, 10);
+  if (!Number.isInteger(paragraphCount) || paragraphCount < 1 || paragraphCount > 20) {
+    throw new Error("Paragraph count must be an integer between 1 and 20");
+  }
+
+  return paragraphCount;
+}
+
 function toSentence(words) {
   const [first, ...rest] = words;
   return `${first.charAt(0).toUpperCase()}${first.slice(1)} ${rest.join(" ")}.`;
@@ -110,28 +116,10 @@ function createLoremIpsum(paragraphCount) {
   return paragraphs.join("\n\n");
 }
 
-async function generate(outputPath, options = {}) {
-  if (!outputPath) {
-    throw new Error("No output file was provided");
-  }
-
-  const paragraphCount = Number.parseInt(options.paragraphs, 10);
-  if (!Number.isInteger(paragraphCount) || paragraphCount < 1 || paragraphCount > 20) {
-    throw new Error("Paragraph count must be an integer between 1 and 20");
-  }
-
-  const resolvedOutputPath = path.resolve(outputPath);
-  await fs.promises.mkdir(path.dirname(resolvedOutputPath), { recursive: true });
-  await fs.promises.writeFile(
-    resolvedOutputPath,
-    `${createLoremIpsum(paragraphCount)}\n`,
-    "utf8",
-  );
-
+function preview(options = {}) {
   return {
-    outputPath: resolvedOutputPath,
-    paragraphs: paragraphCount,
+    text: createLoremIpsum(getParagraphCount(options)),
   };
 }
 
-module.exports = { generate };
+module.exports = { preview };

@@ -2,6 +2,7 @@
 let plugins = [];
 let activePluginId = null;
 let selectedOutputFolder = null;
+let previewRequestToken = 0;
 
 // DOM refs
 const toolList = document.getElementById("tool-list");
@@ -10,6 +11,9 @@ const toolView = document.getElementById("tool-view");
 const toolName = document.getElementById("tool-name");
 const toolDescription = document.getElementById("tool-description");
 const toolOptions = document.getElementById("tool-options");
+const previewSection = document.getElementById("preview-section");
+const previewText = document.getElementById("preview-text");
+const copyPreviewBtn = document.getElementById("copy-preview-btn");
 const outputSection = document.querySelector(".output-section");
 const pickOutputBtn = document.getElementById("pick-output-btn");
 const outputFolderInfo = document.getElementById("output-folder-info");
@@ -41,8 +45,57 @@ function renderSidebar() {
 }
 
 function updateOutputSection(plugin) {
-  const usesGeneratedOutput = plugin?.mode === "generate";
-  outputSection.classList.toggle("hidden", usesGeneratedOutput);
+  outputSection.classList.toggle("hidden", plugin?.mode === "preview");
+}
+
+function updatePreviewSection(plugin) {
+  const usesPreview = plugin?.mode === "preview";
+  previewSection.classList.toggle("hidden", !usesPreview);
+  convertBtn.classList.toggle("hidden", usesPreview);
+
+  if (!usesPreview) {
+    previewText.value = "";
+  }
+}
+
+async function refreshPreview() {
+  const plugin = getActivePlugin();
+  if (!plugin || plugin.mode !== "preview") {
+    return;
+  }
+
+  const requestToken = ++previewRequestToken;
+
+  try {
+    const result = await window.api.preview(plugin.id, collectOptions());
+    if (requestToken !== previewRequestToken) {
+      return;
+    }
+
+    previewText.value = result?.text || "";
+    hideStatus();
+  } catch (error) {
+    if (requestToken !== previewRequestToken) {
+      return;
+    }
+
+    previewText.value = "";
+    showStatus(error.message, "error");
+  }
+}
+
+function bindOptionInput(input) {
+  input.addEventListener("input", () => {
+    if (getActivePlugin()?.mode === "preview") {
+      refreshPreview();
+    }
+  });
+
+  input.addEventListener("change", () => {
+    if (getActivePlugin()?.mode === "preview") {
+      refreshPreview();
+    }
+  });
 }
 
 function selectTool(pluginId) {
@@ -61,9 +114,14 @@ function selectTool(pluginId) {
   toolDescription.textContent = plugin.description;
   renderOptions(plugin.options || []);
   updateOutputSection(plugin);
+  updatePreviewSection(plugin);
   convertBtn.textContent = plugin.actionLabel || "Convert";
   hideStatus();
   hideProgress();
+
+  if (plugin.mode === "preview") {
+    refreshPreview();
+  }
 }
 
 function renderOptions(options) {
@@ -95,6 +153,7 @@ function renderOptions(options) {
       });
 
       select.disabled = (opt.choices || []).length === 0;
+      bindOptionInput(select);
       wrap.appendChild(select);
       group.appendChild(wrap);
     } else if (opt.type === "number" || opt.type === "text") {
@@ -124,6 +183,7 @@ function renderOptions(options) {
         input.placeholder = opt.placeholder;
       }
 
+      bindOptionInput(input);
       group.appendChild(input);
     }
 
@@ -150,6 +210,17 @@ pickOutputBtn.addEventListener("click", async () => {
 clearOutputBtn.addEventListener("click", () => {
   selectedOutputFolder = null;
   updateFolderDisplay();
+});
+
+copyPreviewBtn.addEventListener("click", () => {
+  if (!previewText.value) {
+    showStatus("Nothing to copy", "error");
+    return;
+  }
+
+  window.api.copyText(previewText.value);
+  showStatus("Preview copied", "success");
+  setTimeout(hideStatus, 2000);
 });
 
 function updateFolderDisplay() {
@@ -198,12 +269,10 @@ convertBtn.addEventListener("click", async () => {
   convertBtn.disabled = true;
 
   try {
-    const activePlugin = getActivePlugin();
-    const options = collectOptions();
     const result = await window.api.convert(
       activePluginId,
-      options,
-      activePlugin?.mode === "generate" ? null : selectedOutputFolder,
+      collectOptions(),
+      selectedOutputFolder,
     );
 
     if (!result) {
@@ -222,13 +291,12 @@ convertBtn.addEventListener("click", async () => {
         showStatus(`${result.error}${details}`, "error");
       } else if (result.failedFiles.length > 0) {
         showStatus(
-          `${result.successCount}/${result.totalFiles} completed - ${result.failedFiles.length} failed. First failure: ${result.failedFiles[0].file} (${result.failedFiles[0].error})`,
+          `${result.successCount}/${result.totalFiles} converted - ${result.failedFiles.length} failed. First failure: ${result.failedFiles[0].file} (${result.failedFiles[0].error})`,
           "error",
         );
       } else {
-        const successLabel = activePlugin?.mode === "generate" ? "generated" : "converted";
         showStatus(
-          `${result.successCount} file${result.successCount !== 1 ? "s" : ""} ${successLabel}`,
+          `${result.successCount} file${result.successCount !== 1 ? "s" : ""} converted`,
           "success",
         );
         setTimeout(hideStatus, 4000);
